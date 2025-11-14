@@ -17,6 +17,9 @@ import { InscripcionesModule } from './modules/inscripciones/inscripciones.modul
 import { DetalleInscripcionesModule } from './modules/detalle-inscripcion/detalle-inscripciones.module';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { ProfesorModule } from './modules/profesores/profesores.module';
+import { ActividadesModule } from './modules/actividades/actividades.module';
+import { PremiosController } from './modules/premios/premios.controller';
+import { PremiosModule } from './modules/premios/premios.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -45,7 +48,9 @@ import { ProfesorModule } from './modules/profesores/profesores.module';
     InscripcionesModule,
     DetalleInscripcionesModule,
     PagosModule,
-    ProfesorModule
+    ProfesorModule,
+    ActividadesModule,
+    PremiosModule
   ],
 })
 export class AppModule {}

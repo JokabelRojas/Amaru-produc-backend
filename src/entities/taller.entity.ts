@@ -61,15 +61,6 @@ export class Taller extends Document {
   modalidad: string;
 
   @ApiProperty({
-    description: 'Duración del taller en horas',
-    example: 20,
-    minimum: 1,
-    required: true
-  })
-  @Prop({ required: true, min: 1 })
-  duracion: number;
-
-  @ApiProperty({
     description: 'Precio del taller',
     example: 150.00,
     minimum: 0,

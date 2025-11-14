@@ -59,17 +59,6 @@ export class CreateTallerDto {
   modalidad: string;
 
   @ApiProperty({
-    description: 'Duración del taller en horas',
-    example: 20,
-    minimum: 1,
-    required: true
-  })
-  @IsNumber()
-  @Min(1, { message: 'La duración debe ser al menos 1 hora' })
-  @IsNotEmpty({ message: 'La duración es requerida' })
-  duracion: number;
-
-  @ApiProperty({
     description: 'Precio del taller',
     example: 150.00,
     minimum: 0,
@@ -109,7 +98,6 @@ export class CreateTallerDto {
   @IsNotEmpty({ message: 'El ID de subcategoría es requerido' })
   id_subcategoria: string;
 
-  // ✅ NUEVO: Agregar id_profesor al DTO
   @ApiProperty({
     description: 'ID del profesor que imparte el taller',
     example: '507f1f77bcf86cd799439012',
