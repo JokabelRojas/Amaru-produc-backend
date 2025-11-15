@@ -34,24 +34,30 @@ export class ServiciosController {
   @Post()
   @ApiOperation({
     summary: 'Crear un nuevo servicio',
-    description: 'Crea un nuevo servicio asociado a una categoría y subcategoría existente'
+    description: 'Crea un nuevo servicio independiente sin categorías'
   })
   @ApiBody({ type: CreateServicioDto })
   @ApiResponse({ status: 201, description: 'Servicio creado exitosamente', type: Servicio })
-  @ApiBadRequestResponse({ description: 'Datos inválidos o IDs de categoría/subcategoría no existen' })
+  @ApiBadRequestResponse({ description: 'Datos inválidos' })
   create(@Body() createServicioDto: CreateServicioDto): Promise<Servicio> {
     return this.serviciosService.create(createServicioDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los servicios', description: 'Retorna todos los servicios' })
+  @ApiOperation({ 
+    summary: 'Obtener todos los servicios', 
+    description: 'Retorna todos los servicios sin filtros de categoría' 
+  })
   @ApiResponse({ status: 200, description: 'Lista de servicios obtenida exitosamente', type: [Servicio] })
   findAll(): Promise<Servicio[]> {
     return this.serviciosService.findAll();
   }
 
   @Get('activos')
-  @ApiOperation({ summary: 'Obtener servicios activos', description: 'Retorna todos los servicios con estado "activo"' })
+  @ApiOperation({ 
+    summary: 'Obtener servicios activos', 
+    description: 'Retorna todos los servicios con estado "activo"' 
+  })
   @ApiResponse({ status: 200, description: 'Lista de servicios activos obtenida', type: [Servicio] })
   @ApiNotFoundResponse({ description: 'No se encontraron servicios activos' })
   async findActivos(): Promise<Servicio[]> {
@@ -62,35 +68,23 @@ export class ServiciosController {
     return serviciosActivos;
   }
 
-  @Get('filtrar/servicios')
-  @ApiOperation({ summary: 'Filtrar servicios', description: 'Filtra por categoría, subcategoría y estado (opcional)' })
-  @ApiQuery({ name: 'id_categoria', required: false, description: 'ID de la categoría' })
-  @ApiQuery({ name: 'id_subcategoria', required: false, description: 'ID de la subcategoría' })
-  @ApiQuery({ name: 'estado', required: false, description: 'Estado del servicio (activo/inactivo)', enum: ['activo', 'inactivo'] })
+  @Get('filtrar')
+  @ApiOperation({ 
+    summary: 'Filtrar servicios por estado', 
+    description: 'Filtra servicios por estado (activo/inactivo)' 
+  })
+  @ApiQuery({ 
+    name: 'estado', 
+    required: false, 
+    description: 'Estado del servicio (activo/inactivo)', 
+    enum: ['activo', 'inactivo'] 
+  })
   @ApiResponse({ status: 200, description: 'Servicios filtrados obtenidos', type: [Servicio] })
-  @ApiBadRequestResponse({ description: 'Parámetros de filtrado inválidos' })
+  @ApiBadRequestResponse({ description: 'Parámetro de estado inválido' })
   async filtrarServicios(
-    @Query('id_categoria') idCategoria?: string,
-    @Query('id_subcategoria') idSubcategoria?: string,
     @Query('estado') estado?: string,
   ): Promise<Servicio[]> {
-    return this.serviciosService.filtrarServicios({ id_categoria: idCategoria, id_subcategoria: idSubcategoria, estado });
-  }
-
-  @Get('categoria/:idCategoria')
-  @ApiOperation({ summary: 'Obtener servicios por categoría' })
-  @ApiParam({ name: 'idCategoria', description: 'ID de la categoría (MongoDB ObjectId)' })
-  @ApiResponse({ status: 200, description: 'Servicios de la categoría', type: [Servicio] })
-  findByCategoria(@Param('idCategoria') idCategoria: string): Promise<Servicio[]> {
-    return this.serviciosService.findByCategoria(idCategoria);
-  }
-
-  @Get('subcategoria/:idSubcategoria')
-  @ApiOperation({ summary: 'Obtener servicios por subcategoría' })
-  @ApiParam({ name: 'idSubcategoria', description: 'ID de la subcategoría (MongoDB ObjectId)' })
-  @ApiResponse({ status: 200, description: 'Servicios de la subcategoría', type: [Servicio] })
-  findBySubcategoria(@Param('idSubcategoria') idSubcategoria: string): Promise<Servicio[]> {
-    return this.serviciosService.findBySubcategoria(idSubcategoria);
+    return this.serviciosService.filtrarServicios({ estado });
   }
 
   @Get(':id')

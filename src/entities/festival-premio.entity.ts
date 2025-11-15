@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-import { Categoria } from './categoria.entity';
+import { Actividad } from './actividad.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 @Schema({ timestamps: true })
@@ -21,12 +21,20 @@ export class Festival extends Document {
   descripcion: string;
 
   @ApiProperty({
-    description: 'Fecha del evento del festival',
+    description: 'Fecha de inicio del festival',
     example: '2024-07-15T20:00:00.000Z',
     required: true
   })
   @Prop({ required: true })
-  fecha_evento: Date;
+  fecha_inicio: Date;
+
+  @ApiProperty({
+    description: 'Fecha de fin del festival',
+    example: '2024-07-20T23:00:00.000Z',
+    required: true
+  })
+  @Prop({ required: true })
+  fecha_fin: Date;
 
   @ApiProperty({
     description: 'Lugar donde se realizará el festival',
@@ -53,16 +61,16 @@ export class Festival extends Document {
   tipo: string;
 
   @ApiProperty({
-    description: 'ID de la categoría a la que pertenece el festival',
+    description: 'ID de la actividad a la que pertenece el festival',
     example: '507f1f77bcf86cd799439011',
     required: true
   })
   @Prop({ 
     type: MongooseSchema.Types.ObjectId, 
-    ref: 'Categoria', 
+    ref: 'Actividad', 
     required: true 
   })
-  id_categoria: Categoria;
+  id_actividad: Actividad;
 
   @ApiProperty({
     description: 'Estado del festival',
@@ -100,7 +108,7 @@ export class Festival extends Document {
 export const FestivalSchema = SchemaFactory.createForClass(Festival);
 
 // Índices
-FestivalSchema.index({ id_categoria: 1 });
+FestivalSchema.index({ id_actividad: 1 });
 FestivalSchema.index({ estado: 1 });
-FestivalSchema.index({ fecha_evento: 1 });
+FestivalSchema.index({ fecha_inicio: 1 });
 FestivalSchema.index({ tipo: 1 });

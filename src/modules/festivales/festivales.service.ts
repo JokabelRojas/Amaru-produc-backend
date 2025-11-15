@@ -21,7 +21,7 @@ export class FestivalesService {
     try {
       const createdFestival = new this.festivalModel(createFestivalDto);
       const savedFestival = await createdFestival.save();
-      return await savedFestival.populate('id_categoria');
+      return await savedFestival.populate('id_actividad');
     } catch (error) {
       if (error.name === 'ValidationError') {
         throw new BadRequestException('Datos del festival inválidos');
@@ -31,12 +31,12 @@ export class FestivalesService {
   }
 
   async findAll(): Promise<Festival[]> {
-    return this.festivalModel.find().populate('id_categoria').exec();
+    return this.festivalModel.find().populate('id_actividad').exec();
   }
 
   async findOne(id: string): Promise<Festival> {
     this.validateMongoId(id);
-    const festival = await this.festivalModel.findById(id).populate('id_categoria').exec();
+    const festival = await this.festivalModel.findById(id).populate('id_actividad').exec();
     if (!festival) throw new NotFoundException(`Festival con ID ${id} no encontrado`);
     return festival;
   }
@@ -58,9 +58,9 @@ export class FestivalesService {
     return deletedFestival;
   }
 
-  async findByCategoria(idCategoria: string): Promise<Festival[]> {
-    this.validateMongoId(idCategoria);
-    return this.festivalModel.find({ id_categoria: idCategoria }).populate('id_categoria').exec();
+  async findByActividad(idActividad: string): Promise<Festival[]> {
+    this.validateMongoId(idActividad);
+    return this.festivalModel.find({ id_actividad: idActividad }).populate('id_actividad').exec();
   }
 
   async cambiarEstado(id: string, estado: string): Promise<Festival> {
@@ -68,7 +68,7 @@ export class FestivalesService {
     if (!['activo', 'inactivo'].includes(estado)) {
       throw new BadRequestException('El estado debe ser "activo" o "inactivo"');
     }
-    const festival = await this.festivalModel.findByIdAndUpdate(id, { estado }, { new: true }).populate('id_categoria');
+    const festival = await this.festivalModel.findByIdAndUpdate(id, { estado }, { new: true }).populate('id_actividad');
     if (!festival) throw new NotFoundException(`Festival con ID ${id} no encontrado`);
     return festival;
   }
@@ -76,15 +76,20 @@ export class FestivalesService {
   async findProximos(): Promise<Festival[]> {
     const hoy = new Date();
     return this.festivalModel.find({ 
-      fecha_evento: { $gte: hoy },
+      fecha_inicio: { $gte: hoy },
       estado: 'activo'
-    }).populate('id_categoria').exec();
+    }).populate('id_actividad').exec();
   }
 
   async findByTipo(tipo: string): Promise<Festival[]> {
     return this.festivalModel.find({ 
       tipo: new RegExp(tipo, 'i'),
       estado: 'activo'
-    }).populate('id_categoria').exec();
+    }).populate('id_actividad').exec();
   }
+  async findActivos(): Promise<Festival[]> {
+  return this.festivalModel.find({ 
+    estado: 'activo'
+  }).populate('id_actividad').exec();
+}
 }

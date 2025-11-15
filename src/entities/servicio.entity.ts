@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
-import { Categoria } from './categoria.entity';
-import { Subcategoria } from './subcategoria.entity';
+import { Document } from 'mongoose';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 @Schema({ timestamps: true })
@@ -20,22 +18,6 @@ export class Servicio extends Document {
   })
   @Prop({ trim: true, default: '' })
   descripcion?: string;
-
-  @ApiProperty({
-    description: 'ID de la categoría',
-    example: '507f1f77bcf86cd799439010',
-    required: true
-  })
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Categoria', required: true })
-  id_categoria: Categoria;
-
-  @ApiProperty({
-    description: 'ID de la subcategoría',
-    example: '507f1f77bcf86cd799439011',
-    required: true
-  })
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Subcategoria', required: true })
-  id_subcategoria: Subcategoria;
 
   @ApiProperty({
     description: 'Estado del servicio',
@@ -69,5 +51,4 @@ export class Servicio extends Document {
 export const ServicioSchema = SchemaFactory.createForClass(Servicio);
 
 // Índices
-ServicioSchema.index({ id_subcategoria: 1 });
 ServicioSchema.index({ estado: 1 });

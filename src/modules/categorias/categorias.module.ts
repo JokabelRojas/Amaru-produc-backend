@@ -3,18 +3,21 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriaController } from './categorias.controller';
 import { CategoriaService } from './categorias.service';
 import { Categoria, CategoriaSchema } from 'src/entities/categoria.entity';
+import { Subcategoria, SubcategoriaSchema } from 'src/entities/subcategoria.entity';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { 
-        name: Categoria.name, 
-        schema: CategoriaSchema 
-      }
+      {
+        name: Categoria.name,
+        schema: CategoriaSchema
+      },
+      { name: Subcategoria.name, schema: SubcategoriaSchema }
+
     ]),
   ],
   controllers: [CategoriaController],
   providers: [CategoriaService],
   exports: [CategoriaService],
 })
-export class CategoriaModule {}
+export class CategoriaModule { }

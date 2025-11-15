@@ -22,7 +22,7 @@ export class FestivalesController {
     type: Festival
   })
   @ApiBadRequestResponse({
-    description: 'Datos inválidos o ID de categoría no existe'
+    description: 'Datos inválidos o ID de actividad no existe'
   })
   create(@Body() createFestivalDto: CreateFestivalDto): Promise<Festival> {
     return this.festivalesService.create(createFestivalDto);
@@ -56,26 +56,26 @@ export class FestivalesController {
     return this.festivalesService.findProximos();
   }
 
-  @Get('categoria/:idCategoria')
+  @Get('actividad/:idActividad')
   @ApiOperation({
-    summary: 'Obtener festivales por categoría',
-    description: 'Retorna todos los festivales asociados a una categoría específica'
+    summary: 'Obtener festivales por actividad',
+    description: 'Retorna todos los festivales asociados a una actividad específica'
   })
   @ApiParam({
-    name: 'idCategoria',
-    description: 'ID de la categoría (MongoDB ObjectId)',
+    name: 'idActividad',
+    description: 'ID de la actividad (MongoDB ObjectId)',
     example: '507f1f77bcf86cd799439011'
   })
   @ApiResponse({
     status: 200,
-    description: 'Festivales de la categoría especificada',
+    description: 'Festivales de la actividad especificada',
     type: [Festival]
   })
   @ApiNotFoundResponse({
-    description: 'Categoría no encontrada'
+    description: 'Actividad no encontrada'
   })
-  findByCategoria(@Param('idCategoria') idCategoria: string): Promise<Festival[]> {
-    return this.festivalesService.findByCategoria(idCategoria);
+  findByActividad(@Param('idActividad') idActividad: string): Promise<Festival[]> {
+    return this.festivalesService.findByActividad(idActividad);
   }
 
   @Get('tipo/:tipo')
@@ -209,4 +209,17 @@ export class FestivalesController {
   async remove(@Param('id') id: string): Promise<void> {
     await this.festivalesService.remove(id);
   }
+  @Get('estado/activos')
+@ApiOperation({
+  summary: 'Obtener festivales activos',
+  description: 'Retorna todos los festivales que están actualmente activos en el sistema'
+})
+@ApiResponse({
+  status: 200,
+  description: 'Lista de festivales activos obtenida exitosamente',
+  type: [Festival]
+})
+findActivos(): Promise<Festival[]> {
+  return this.festivalesService.findActivos();
+}
 }

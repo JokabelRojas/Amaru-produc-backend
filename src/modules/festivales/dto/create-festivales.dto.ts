@@ -20,13 +20,22 @@ export class CreateFestivalDto {
   descripcion?: string;
 
   @ApiProperty({
-    description: 'Fecha del evento del festival (formato ISO 8601)',
+    description: 'Fecha de inicio del festival (formato ISO 8601)',
     example: '2024-07-15T20:00:00.000Z',
     required: true
   })
   @IsDateString()
   @IsNotEmpty()
-  fecha_evento: Date;
+  fecha_inicio: Date;
+
+  @ApiProperty({
+    description: 'Fecha de fin del festival (formato ISO 8601)',
+    example: '2024-07-20T23:00:00.000Z',
+    required: true
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  fecha_fin: Date;
 
   @ApiProperty({
     description: 'Lugar donde se realizará el festival',
@@ -56,13 +65,13 @@ export class CreateFestivalDto {
   tipo: string;
 
   @ApiProperty({
-    description: 'ID de la categoría a la que pertenece el festival',
+    description: 'ID de la actividad a la que pertenece el festival',
     example: '507f1f77bcf86cd799439011',
     required: true
   })
   @IsMongoId()
   @IsNotEmpty()
-  id_categoria: string;
+  id_actividad: string;
 
   @ApiPropertyOptional({
     description: 'Estado del festival',

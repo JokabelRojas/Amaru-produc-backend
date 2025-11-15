@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,  
   Body,
   Patch,
   Param,
@@ -195,4 +196,40 @@ export class SubcategoriasController {
   async remove(@Param('id') id: string): Promise<void> {
     await this.subcategoriasService.remove(id);
   }
+
+  @Put('categoria/:idCategoria/activar-todas')
+@ApiOperation({
+  summary: 'Activar todas las subcategorías de una categoría',
+  description: 'Activa masivamente todas las subcategorías de una categoría específica'
+})
+@ApiParam({
+  name: 'idCategoria',
+  description: 'ID de la categoría',
+  example: '507f1f77bcf86cd799439011'
+})
+@ApiResponse({
+  status: 200,
+  description: 'Subcategorías activadas exitosamente',
+})
+async activarTodasPorCategoria(@Param('idCategoria') idCategoria: string): Promise<{ message: string, count: number }> {
+  return this.subcategoriasService.activarTodasPorCategoria(idCategoria);
+}
+
+@Put('categoria/:idCategoria/desactivar-todas')
+@ApiOperation({
+  summary: 'Desactivar todas las subcategorías de una categoría',
+  description: 'Desactiva masivamente todas las subcategorías de una categoría específica'
+})
+@ApiParam({
+  name: 'idCategoria',
+  description: 'ID de la categoría',
+  example: '507f1f77bcf86cd799439011'
+})
+@ApiResponse({
+  status: 200,
+  description: 'Subcategorías desactivadas exitosamente',
+})
+async desactivarTodasPorCategoria(@Param('idCategoria') idCategoria: string): Promise<{ message: string, count: number }> {
+  return this.subcategoriasService.desactivarTodasPorCategoria(idCategoria);
+}
 }

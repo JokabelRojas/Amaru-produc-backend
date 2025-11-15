@@ -17,9 +17,37 @@ export class InscripcionesService {
     }
   }
 
+  private async calcularTotalInscripcion(idUsuario: string): Promise<{ total: number; moneda: string }> {
+    // Aquí implementas la lógica para calcular el total
+    // Por ejemplo, podrías:
+    // 1. Buscar cursos/eventos que el usuario quiere inscribirse
+    // 2. Consultar precios desde otra colección
+    // 3. Aplicar descuentos si corresponde
+    
+    // Por ahora, usaremos valores por defecto como ejemplo
+    // Puedes modificar esta lógica según tus necesidades
+    
+    // Ejemplo: calcular basado en cursos pendientes del usuario
+    const totalCalculado = 100.00; // Este valor vendría de tu lógica de negocio
+    const moneda = 'PEN'; // O podrías determinar la moneda basado en el usuario/ubicación
+    
+    return { total: totalCalculado, moneda };
+  }
+
   async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
     try {
-      const createdInscripcion = new this.inscripcionModel(createInscripcionDto);
+      // Calcular automáticamente el total y moneda
+      const { total, moneda } = await this.calcularTotalInscripcion(createInscripcionDto.id_usuario);
+      
+      // Crear el objeto de inscripción con los valores calculados
+      const inscripcionData = {
+        ...createInscripcionDto,
+        total,
+        moneda,
+        fecha_inscripcion: new Date()
+      };
+
+      const createdInscripcion = new this.inscripcionModel(inscripcionData);
       const savedInscripcion = await createdInscripcion.save();
       return await savedInscripcion.populate('id_usuario');
     } catch (error) {
@@ -30,6 +58,7 @@ export class InscripcionesService {
     }
   }
 
+  // Los demás métodos permanecen igual...
   async findAll(): Promise<Inscripcion[]> {
     return this.inscripcionModel.find().populate('id_usuario').exec();
   }
@@ -92,7 +121,7 @@ export class InscripcionesService {
       { $group: { _id: '$estado', count: { $sum: 1 } } }
     ]);
     const ingresos = await this.inscripcionModel.aggregate([
-      { $match: { estado: 'pagado' } },
+      { $match: { estado: 'aprobado' } }, // Cambié 'pagado' por 'aprobado' para coincidir con tus estados
       { $group: { _id: null, total: { $sum: '$total' } } }
     ]);
 

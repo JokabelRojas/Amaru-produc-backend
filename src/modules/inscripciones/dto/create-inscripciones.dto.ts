@@ -1,4 +1,4 @@
-import { IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsIn, Min, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsOptional, IsIn, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateInscripcionDto {
@@ -11,28 +11,6 @@ export class CreateInscripcionDto {
   @IsNotEmpty()
   id_usuario: string;
 
-  @ApiProperty({
-    description: 'Total a pagar por la inscripción',
-    example: 150.00,
-    minimum: 0,
-    required: true
-  })
-  @IsNumber()
-  @Min(0)
-  @IsNotEmpty()
-  total: number;
-
-  @ApiPropertyOptional({
-    description: 'Moneda del pago',
-    example: 'PEN',
-    enum: ['PEN', 'USD'],
-    default: 'PEN'
-  })
-  @IsString()
-  @IsIn(['PEN', 'USD'])
-  @IsOptional()
-  moneda?: string;
-
   @ApiPropertyOptional({
     description: 'Estado de la inscripción',
     example: 'pendiente',
@@ -43,4 +21,6 @@ export class CreateInscripcionDto {
   @IsIn(['pendiente','aprobado','rechazado'])
   @IsOptional()
   estado?: string;
+
+  // Removemos los campos total y moneda del DTO ya que se calcularán automáticamente
 }

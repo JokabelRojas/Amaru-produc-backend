@@ -8,17 +8,24 @@ import { JwtStrategy } from './jwt.strategy';
 import { Usuario, UsuarioSchema } from '../entities/usuario.entity';
 import { UsuariosService } from '../modules/usuarios/usuarios.service';
 import { Rol, RolSchema } from 'src/entities/rol.entity';
+import { UsuarioSinPassword, UsuarioSinPasswordSchema } from 'src/entities/usuario-sin-password.entity';
+import { AuthSinPasswordService } from './auth-sin-password.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ 
-      name: Usuario.name, 
-      schema: UsuarioSchema 
-    },
-    { 
-      name: Rol.name, 
-      schema: RolSchema
-    }
+    MongooseModule.forFeature([
+      { 
+        name: Usuario.name, 
+        schema: UsuarioSchema 
+      },
+      { 
+        name: Rol.name, 
+        schema: RolSchema
+      },
+      { 
+        name: UsuarioSinPassword.name, 
+        schema: UsuarioSinPasswordSchema 
+      },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -30,7 +37,15 @@ import { Rol, RolSchema } from 'src/entities/rol.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, UsuariosService],
-  exports: [AuthService],
+  providers: [
+    AuthService, 
+    AuthSinPasswordService, // <- AÑADIR AQUÍ
+    JwtStrategy, 
+    UsuariosService
+  ],
+  exports: [
+    AuthService, 
+    AuthSinPasswordService // <- AHORA SÍ PUEDES EXPORTARLO
+  ],
 })
 export class AuthModule {}

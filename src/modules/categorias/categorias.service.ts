@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Categoria, CategoriaDocument } from 'src/entities/categoria.entity';
 import { CreateCategoriaDto } from './dto/create-categorias.dto';
 import { UpdateCategoriaDto } from './dto/update-categorias.dto';
+import { Subcategoria } from 'src/entities/subcategoria.entity';
 
 @Injectable()
 export class CategoriaService {
   constructor(
     @InjectModel(Categoria.name) private readonly categoriaModel: Model<CategoriaDocument>,
+    @InjectModel(Subcategoria.name) private readonly subcategoriaModel: Model<Subcategoria>,
   ) {}
 
   // Crear
@@ -63,26 +65,59 @@ export class CategoriaService {
   }
 
   // Soft delete / desactivar
-  async softDelete(id: string): Promise<Categoria> {
+async softDelete(id: string): Promise<Categoria> {
     const categoria = await this.categoriaModel
       .findByIdAndUpdate(id, { estado: 'inactivo' }, { new: true })
       .exec();
-    if (!categoria) throw new NotFoundException('Categoría no encontrada');
+    
+    if (!categoria) {
+      throw new NotFoundException('Categoría no encontrada');
+    }
+
+    // Desactivar TODAS las subcategorías relacionadas
+    await this.subcategoriaModel.updateMany(
+      { id_categoria: id },
+      { estado: 'inactivo' }
+    ).exec();
+
     return categoria;
   }
 
-  // Activar
+  // Activar (MODIFICADO)
   async activate(id: string): Promise<Categoria> {
     const categoria = await this.categoriaModel
       .findByIdAndUpdate(id, { estado: 'activo' }, { new: true })
       .exec();
-    if (!categoria) throw new NotFoundException('Categoría no encontrada');
+    
+    if (!categoria) {
+      throw new NotFoundException('Categoría no encontrada');
+    }
+
+    // Activar TODAS las subcategorías relacionadas
+    await this.subcategoriaModel.updateMany(
+      { id_categoria: id },
+      { estado: 'activo' }
+    ).exec();
+
     return categoria;
   }
 
-  // Eliminar permanente
+  // Eliminar permanente (MODIFICADO)
   async remove(id: string): Promise<void> {
+    // Verificar si existen subcategorías antes de eliminar
+    const subcategoriasCount = await this.subcategoriaModel.countDocuments({ 
+      id_categoria: id 
+    }).exec();
+    
+    if (subcategoriasCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar la categoría porque tiene subcategorías asociadas. Desactívela en su lugar.'
+      );
+    }
+
     const result = await this.categoriaModel.findByIdAndDelete(id).exec();
-    if (!result) throw new NotFoundException('Categoría no encontrada');
+    if (!result) {
+      throw new NotFoundException('Categoría no encontrada');
+    }
   }
 }
