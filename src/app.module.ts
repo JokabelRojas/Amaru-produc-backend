@@ -18,13 +18,14 @@ import { DetalleInscripcionesModule } from './modules/detalle-inscripcion/detall
 import { PagosModule } from './modules/pagos/pagos.module';
 import { ProfesorModule } from './modules/profesores/profesores.module';
 import { ActividadesModule } from './modules/actividades/actividades.module';
-import { PremiosController } from './modules/premios/premios.controller';
 import { PremiosModule } from './modules/premios/premios.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig],
+      envFilePath: '.env',
     }),
 
     MongooseModule.forRootAsync({

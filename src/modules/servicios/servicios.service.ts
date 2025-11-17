@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { CreateServicioDto } from './dto/create-servicios.dto';
@@ -14,13 +14,56 @@ export class ServiciosService {
   // Validar formato de ObjectId de MongoDB
   private validateMongoId(id: string): void {
     if (!isValidObjectId(id)) {
-      throw new BadRequestException(`ID ${id} no es válido`);
+      throw new BadRequestException({
+        message: `ID ${id} no es válido`,
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+      });
     }
   }
 
+  private async validateCreateServicio(dto: CreateServicioDto): Promise<void> {
+    // Validar campos requeridos
+    if (!dto.titulo || dto.titulo.trim() === '') {
+      throw new BadRequestException({
+        message: 'El título es requerido',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+      });
+    }
+
+    // Validar título único
+    const existingServicio = await this.servicioModel.findOne({
+      titulo: dto.titulo,
+    }).exec();
+
+    if (existingServicio) {
+      throw new ConflictException({
+        message: 'Ya existe un servicio con este título',
+        error: 'CONFLICT',
+        statusCode: 409,
+      });
+    }
+  }
+
+  private async validateServicioExists(id: string): Promise<Servicio> {
+    this.validateMongoId(id);
+    const servicio = await this.servicioModel.findById(id).exec();
+    if (!servicio) {
+      throw new NotFoundException({
+        message: `Servicio con ID ${id} no encontrado`,
+        error: 'NOT_FOUND',
+        statusCode: 404,
+      });
+    }
+    return servicio;
+  }
+
   // Crear servicio
-  async create(createServicioDto: CreateServicioDto): Promise<Servicio> {
+  async create(createServicioDto: CreateServicioDto): Promise<{ data: Servicio; message: string }> {
     try {
+      await this.validateCreateServicio(createServicioDto);
+
       const createdServicio = new this.servicioModel({
         titulo: createServicioDto.titulo ?? 'Servicio sin título',
         descripcion: createServicioDto.descripcion ?? '',
@@ -29,73 +72,228 @@ export class ServiciosService {
       });
 
       const savedServicio = await createdServicio.save();
-      return savedServicio;
+      
+      return {
+        data: savedServicio,
+        message: 'Servicio creado exitosamente'
+      };
     } catch (error) {
       if (error.name === 'ValidationError') {
-        throw new BadRequestException('Datos del servicio inválidos: ' + error.message);
+        throw new BadRequestException({
+          message: 'Datos del servicio inválidos',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+          details: error.message,
+        });
       }
-      throw error;
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al crear el servicio',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
     }
   }
 
   // Listar todos los servicios
-  async findAll(): Promise<Servicio[]> {
-    return this.servicioModel.find().exec();
+  async findAll(): Promise<{ data: Servicio[]; message: string }> {
+    try {
+      const servicios = await this.servicioModel.find().exec();
+      return {
+        data: servicios,
+        message: servicios.length > 0 
+          ? 'Servicios obtenidos exitosamente' 
+          : 'No se encontraron servicios'
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al obtener los servicios',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Listar servicios activos
-  async findActivos(): Promise<Servicio[]> {
-    return this.servicioModel.find({ estado: 'activo' }).exec();
+  async findActivos(): Promise<{ data: Servicio[]; message: string }> {
+    try {
+      const servicios = await this.servicioModel.find({ estado: 'activo' }).exec();
+      return {
+        data: servicios,
+        message: servicios.length > 0 
+          ? 'Servicios activos obtenidos exitosamente' 
+          : 'No se encontraron servicios activos'
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al obtener los servicios activos',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Buscar por ID
-  async findOne(id: string): Promise<Servicio> {
-    this.validateMongoId(id);
-    const servicio = await this.servicioModel.findById(id).exec();
-    if (!servicio) {
-      throw new NotFoundException(`Servicio con ID ${id} no encontrado`);
+  async findOne(id: string): Promise<{ data: Servicio; message: string }> {
+    try {
+      const servicio = await this.validateServicioExists(id);
+      return {
+        data: servicio,
+        message: 'Servicio obtenido exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al obtener el servicio',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
     }
-    return servicio;
   }
 
   // Actualizar servicio
-  async update(id: string, updateServicioDto: UpdateServicioDto): Promise<Servicio> {
-    this.validateMongoId(id);
-    const servicio = await this.servicioModel.findById(id);
-    if (!servicio) throw new NotFoundException(`Servicio con ID ${id} no encontrado`);
+  async update(id: string, updateServicioDto: UpdateServicioDto): Promise<{ data: Servicio; message: string }> {
+    try {
+      const servicio = await this.validateServicioExists(id);
 
-    Object.assign(servicio, updateServicioDto);
-    const updatedServicio = await servicio.save();
-    return updatedServicio;
+      // Validar título único si se está actualizando
+      if (updateServicioDto.titulo) {
+        const existingServicio = await this.servicioModel.findOne({
+          titulo: updateServicioDto.titulo,
+          _id: { $ne: id },
+        }).exec();
+
+        if (existingServicio) {
+          throw new ConflictException({
+            message: 'Ya existe otro servicio con este título',
+            error: 'CONFLICT',
+            statusCode: 409,
+          });
+        }
+      }
+
+      Object.assign(servicio, updateServicioDto);
+      const updatedServicio = await servicio.save();
+      
+      return {
+        data: updatedServicio,
+        message: 'Servicio actualizado exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al actualizar el servicio',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Eliminar servicio
-  async remove(id: string): Promise<Servicio> {
-    this.validateMongoId(id);
-    const deletedServicio = await this.servicioModel.findByIdAndDelete(id);
-    if (!deletedServicio) throw new NotFoundException(`Servicio con ID ${id} no encontrado`);
-    return deletedServicio;
+  async remove(id: string): Promise<{ message: string }> {
+    try {
+      await this.validateServicioExists(id);
+
+      const deletedServicio = await this.servicioModel.findByIdAndDelete(id);
+      if (!deletedServicio) {
+        throw new NotFoundException({
+          message: `Servicio con ID ${id} no encontrado`,
+          error: 'NOT_FOUND',
+          statusCode: 404,
+        });
+      }
+
+      return { 
+        message: 'Servicio eliminado correctamente' 
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al eliminar el servicio',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Cambiar estado (activo / inactivo)
-  async cambiarEstado(id: string, estado: string): Promise<Servicio> {
-    this.validateMongoId(id);
-    if (!['activo', 'inactivo'].includes(estado)) {
-      throw new BadRequestException('El estado debe ser "activo" o "inactivo"');
+  async cambiarEstado(id: string, estado: string): Promise<{ data: Servicio; message: string }> {
+    try {
+      await this.validateServicioExists(id);
+      
+      if (!['activo', 'inactivo'].includes(estado)) {
+        throw new BadRequestException({
+          message: 'El estado debe ser "activo" o "inactivo"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      const servicio = await this.servicioModel
+        .findByIdAndUpdate(id, { estado }, { new: true }).exec();
+
+      if (!servicio) {
+        throw new NotFoundException({
+          message: `Servicio con ID ${id} no encontrado`,
+          error: 'NOT_FOUND',
+          statusCode: 404,
+        });
+      }
+
+      return {
+        data: servicio,
+        message: `Servicio ${estado} exitosamente`
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al cambiar el estado del servicio',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
     }
-    const servicio = await this.servicioModel
-      .findByIdAndUpdate(id, { estado }, { new: true });
-    if (!servicio) throw new NotFoundException(`Servicio con ID ${id} no encontrado`);
-    return servicio;
   }
 
   // Filtrar servicios (solo por estado ahora)
-  async filtrarServicios(filtros: { estado?: string }): Promise<Servicio[]> {
-    const query: any = {};
-    if (filtros.estado && ['activo', 'inactivo'].includes(filtros.estado.toLowerCase())) {
-      query.estado = filtros.estado.toLowerCase();
-    }
+  async filtrarServicios(filtros: { estado?: string }): Promise<{ data: Servicio[]; message: string }> {
+    try {
+      const query: any = {};
+      if (filtros.estado && ['activo', 'inactivo'].includes(filtros.estado.toLowerCase())) {
+        query.estado = filtros.estado.toLowerCase();
+      }
 
-    return this.servicioModel.find(query).exec();
+      const servicios = await this.servicioModel.find(query).exec();
+      
+      return {
+        data: servicios,
+        message: servicios.length > 0 
+          ? 'Servicios filtrados exitosamente' 
+          : 'No se encontraron servicios con los filtros aplicados'
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al filtrar los servicios',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 }

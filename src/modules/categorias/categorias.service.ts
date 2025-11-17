@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Categoria, CategoriaDocument } from 'src/entities/categoria.entity';
@@ -13,111 +13,428 @@ export class CategoriaService {
     @InjectModel(Subcategoria.name) private readonly subcategoriaModel: Model<Subcategoria>,
   ) {}
 
+  // Validadores
+  private async validateCreateCategoria(createCategoriaDto: CreateCategoriaDto): Promise<void> {
+    // Validar nombre único
+    const existingCategoria = await this.categoriaModel.findOne({
+      nombre: createCategoriaDto.nombre,
+    }).exec();
+
+    if (existingCategoria) {
+      throw new ConflictException({
+        message: 'Ya existe una categoría con este nombre',
+        error: 'CONFLICT',
+        statusCode: 409,
+      });
+    }
+
+    // Validar tipo
+    const validTypes = ['taller', 'servicio'];
+    if (!validTypes.includes(createCategoriaDto.tipo)) {
+      throw new BadRequestException({
+        message: 'El tipo debe ser "taller" o "servicio"',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+      });
+    }
+
+    // Validar estado si se proporciona
+    if (createCategoriaDto.estado) {
+      const validStates = ['activo', 'inactivo'];
+      if (!validStates.includes(createCategoriaDto.estado)) {
+        throw new BadRequestException({
+          message: 'El estado debe ser "activo" o "inactivo"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+    }
+  }
+
+  private async validateUpdateCategoria(id: string, updateCategoriaDto: UpdateCategoriaDto): Promise<void> {
+    // Verificar que la categoría existe
+    const categoriaExists = await this.categoriaModel.findById(id).exec();
+    if (!categoriaExists) {
+      throw new NotFoundException({
+        message: 'Categoría no encontrada',
+        error: 'NOT_FOUND',
+        statusCode: 404,
+      });
+    }
+
+    // Validar nombre único (si se está actualizando el nombre)
+    if (updateCategoriaDto.nombre) {
+      const existingCategoria = await this.categoriaModel.findOne({
+        nombre: updateCategoriaDto.nombre,
+        _id: { $ne: id }, // Excluir la categoría actual
+      }).exec();
+
+      if (existingCategoria) {
+        throw new ConflictException({
+          message: 'Ya existe otra categoría con este nombre',
+          error: 'CONFLICT',
+          statusCode: 409,
+        });
+      }
+    }
+
+    // Validar tipo (si se está actualizando)
+    if (updateCategoriaDto.tipo) {
+      const validTypes = ['taller', 'servicio'];
+      if (!validTypes.includes(updateCategoriaDto.tipo)) {
+        throw new BadRequestException({
+          message: 'El tipo debe ser "taller" o "servicio"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+    }
+
+    // Validar estado (si se está actualizando)
+    if (updateCategoriaDto.estado) {
+      const validStates = ['activo', 'inactivo'];
+      if (!validStates.includes(updateCategoriaDto.estado)) {
+        throw new BadRequestException({
+          message: 'El estado debe ser "activo" o "inactivo"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+    }
+  }
+
+  private async validateCategoriaExists(id: string): Promise<Categoria> {
+    const categoria = await this.categoriaModel.findById(id).exec();
+    if (!categoria) {
+      throw new NotFoundException({
+        message: 'Categoría no encontrada',
+        error: 'NOT_FOUND',
+        statusCode: 404,
+      });
+    }
+    return categoria;
+  }
+
   // Crear
-  async create(createCategoriaDto: CreateCategoriaDto): Promise<Categoria> {
-    const created = new this.categoriaModel(createCategoriaDto);
-    return created.save();
+  async create(createCategoriaDto: CreateCategoriaDto): Promise<{ data: Categoria; message: string }> {
+    try {
+      await this.validateCreateCategoria(createCategoriaDto);
+
+      const created = new this.categoriaModel(createCategoriaDto);
+      const savedCategoria = await created.save();
+
+      return {
+        data: savedCategoria,
+        message: 'Categoría creada exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al crear la categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Obtener todas
-  async findAll(): Promise<Categoria[]> {
-    return this.categoriaModel.find().exec();
+  async findAll(): Promise<{ data: Categoria[]; message: string }> {
+    try {
+      const categorias = await this.categoriaModel.find().exec();
+      return {
+        data: categorias,
+        message: categorias.length > 0 
+          ? 'Categorías obtenidas exitosamente' 
+          : 'No se encontraron categorías'
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al obtener las categorías',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Obtener activas
-  async findActive(): Promise<Categoria[]> {
-    return this.categoriaModel.find({ estado: 'activo' }).exec();
+  async findActive(): Promise<{ data: Categoria[]; message: string }> {
+    try {
+      const categorias = await this.categoriaModel.find({ estado: 'activo' }).exec();
+      return {
+        data: categorias,
+        message: categorias.length > 0 
+          ? 'Categorías activas obtenidas exitosamente' 
+          : 'No se encontraron categorías activas'
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al obtener las categorías activas',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Filtrar por estado (activo/inactivo)
-  async findByEstado(estado: 'activo' | 'inactivo'): Promise<Categoria[]> {
-    return this.categoriaModel.find({ estado }).exec();
+  async findByEstado(estado: 'activo' | 'inactivo'): Promise<{ data: Categoria[]; message: string }> {
+    try {
+      // Validar estado
+      const validStates = ['activo', 'inactivo'];
+      if (!validStates.includes(estado)) {
+        throw new BadRequestException({
+          message: 'El estado debe ser "activo" o "inactivo"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      const categorias = await this.categoriaModel.find({ estado }).exec();
+      return {
+        data: categorias,
+        message: categorias.length > 0 
+          ? `Categorías ${estado}s obtenidas exitosamente` 
+          : `No se encontraron categorías ${estado}s`
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al filtrar las categorías por estado',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Filtrar por tipo
-  async findByTipo(tipo: 'taller' | 'servicio'): Promise<Categoria[]> {
-    return this.categoriaModel.find({ tipo, estado: 'activo' }).exec();
+  async findByTipo(tipo: 'taller' | 'servicio'): Promise<{ data: Categoria[]; message: string }> {
+    try {
+      // Validar tipo
+      const validTypes = ['taller', 'servicio'];
+      if (!validTypes.includes(tipo)) {
+        throw new BadRequestException({
+          message: 'El tipo debe ser "taller" o "servicio"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      const categorias = await this.categoriaModel.find({ tipo, estado: 'activo' }).exec();
+      return {
+        data: categorias,
+        message: categorias.length > 0 
+          ? `Categorías de tipo ${tipo} obtenidas exitosamente` 
+          : `No se encontraron categorías de tipo ${tipo}`
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al filtrar las categorías por tipo',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Buscar por rango de fechas
-  async findByDateRange(startDate: Date, endDate: Date): Promise<Categoria[]> {
-    return this.categoriaModel
-      .find({
-        createdAt: { $gte: startDate, $lte: endDate },
-      })
-      .exec();
+  async findByDateRange(startDate: Date, endDate: Date): Promise<{ data: Categoria[]; message: string }> {
+    try {
+      // Validar fechas
+      if (!startDate || !endDate) {
+        throw new BadRequestException({
+          message: 'Las fechas de inicio y fin son requeridas',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      if (startDate > endDate) {
+        throw new BadRequestException({
+          message: 'La fecha de inicio no puede ser mayor a la fecha de fin',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      const categorias = await this.categoriaModel
+        .find({
+          createdAt: { $gte: startDate, $lte: endDate },
+        })
+        .exec();
+
+      return {
+        data: categorias,
+        message: categorias.length > 0 
+          ? 'Categorías obtenidas por rango de fechas exitosamente' 
+          : 'No se encontraron categorías en el rango de fechas especificado'
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al buscar categorías por rango de fechas',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Buscar por ID
-  async findOne(id: string): Promise<Categoria> {
-    const categoria = await this.categoriaModel.findById(id).exec();
-    if (!categoria) throw new NotFoundException('Categoría no encontrada');
-    return categoria;
+  async findOne(id: string): Promise<{ data: Categoria; message: string }> {
+    try {
+      const categoria = await this.validateCategoriaExists(id);
+      return {
+        data: categoria,
+        message: 'Categoría obtenida exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al obtener la categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Actualizar
-  async update(id: string, updateCategoriaDto: UpdateCategoriaDto): Promise<Categoria> {
-    const updated = await this.categoriaModel
-      .findByIdAndUpdate(id, updateCategoriaDto, { new: true })
-      .exec();
-    if (!updated) throw new NotFoundException('Categoría no encontrada');
-    return updated;
+  async update(id: string, updateCategoriaDto: UpdateCategoriaDto): Promise<{ data: Categoria; message: string }> {
+    try {
+      await this.validateUpdateCategoria(id, updateCategoriaDto);
+
+      const updated = await this.categoriaModel
+        .findByIdAndUpdate(id, updateCategoriaDto, { new: true })
+        .exec();
+
+      return {
+        data: updated!,
+        message: 'Categoría actualizada exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al actualizar la categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
   }
 
   // Soft delete / desactivar
-async softDelete(id: string): Promise<Categoria> {
-    const categoria = await this.categoriaModel
-      .findByIdAndUpdate(id, { estado: 'inactivo' }, { new: true })
-      .exec();
-    
-    if (!categoria) {
-      throw new NotFoundException('Categoría no encontrada');
+  async softDelete(id: string): Promise<{ data: Categoria; message: string }> {
+    try {
+      await this.validateCategoriaExists(id);
+
+      const categoria = await this.categoriaModel
+        .findByIdAndUpdate(id, { estado: 'inactivo' }, { new: true })
+        .exec();
+
+      // Desactivar TODAS las subcategorías relacionadas
+      await this.subcategoriaModel.updateMany(
+        { id_categoria: id },
+        { estado: 'inactivo' }
+      ).exec();
+
+      return {
+        data: categoria!,
+        message: 'Categoría desactivada exitosamente junto con sus subcategorías'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al desactivar la categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
     }
-
-    // Desactivar TODAS las subcategorías relacionadas
-    await this.subcategoriaModel.updateMany(
-      { id_categoria: id },
-      { estado: 'inactivo' }
-    ).exec();
-
-    return categoria;
   }
 
-  // Activar (MODIFICADO)
-  async activate(id: string): Promise<Categoria> {
-    const categoria = await this.categoriaModel
-      .findByIdAndUpdate(id, { estado: 'activo' }, { new: true })
-      .exec();
-    
-    if (!categoria) {
-      throw new NotFoundException('Categoría no encontrada');
+  // Activar
+  async activate(id: string): Promise<{ data: Categoria; message: string }> {
+    try {
+      await this.validateCategoriaExists(id);
+
+      const categoria = await this.categoriaModel
+        .findByIdAndUpdate(id, { estado: 'activo' }, { new: true })
+        .exec();
+
+      // Activar TODAS las subcategorías relacionadas
+      await this.subcategoriaModel.updateMany(
+        { id_categoria: id },
+        { estado: 'activo' }
+      ).exec();
+
+      return {
+        data: categoria!,
+        message: 'Categoría activada exitosamente junto con sus subcategorías'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al activar la categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
     }
-
-    // Activar TODAS las subcategorías relacionadas
-    await this.subcategoriaModel.updateMany(
-      { id_categoria: id },
-      { estado: 'activo' }
-    ).exec();
-
-    return categoria;
   }
 
-  // Eliminar permanente (MODIFICADO)
-  async remove(id: string): Promise<void> {
-    // Verificar si existen subcategorías antes de eliminar
-    const subcategoriasCount = await this.subcategoriaModel.countDocuments({ 
-      id_categoria: id 
-    }).exec();
-    
-    if (subcategoriasCount > 0) {
-      throw new BadRequestException(
-        'No se puede eliminar la categoría porque tiene subcategorías asociadas. Desactívela en su lugar.'
-      );
-    }
+  // Eliminar permanente
+  async remove(id: string): Promise<{ message: string }> {
+    try {
+      await this.validateCategoriaExists(id);
 
-    const result = await this.categoriaModel.findByIdAndDelete(id).exec();
-    if (!result) {
-      throw new NotFoundException('Categoría no encontrada');
+      // Verificar si existen subcategorías antes de eliminar
+      const subcategoriasCount = await this.subcategoriaModel.countDocuments({ 
+        id_categoria: id 
+      }).exec();
+      
+      if (subcategoriasCount > 0) {
+        throw new BadRequestException({
+          message: 'No se puede eliminar la categoría porque tiene subcategorías asociadas. Desactívela en su lugar.',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      await this.categoriaModel.findByIdAndDelete(id).exec();
+
+      return {
+        message: 'Categoría eliminada permanentemente exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al eliminar la categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
     }
   }
 }
