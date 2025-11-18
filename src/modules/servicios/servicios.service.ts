@@ -60,7 +60,7 @@ export class ServiciosService {
   }
 
   // Crear servicio
-  async create(createServicioDto: CreateServicioDto): Promise<{ data: Servicio; message: string }> {
+  async create(createServicioDto: CreateServicioDto): Promise<Servicio> {
     try {
       await this.validateCreateServicio(createServicioDto);
 
@@ -73,10 +73,7 @@ export class ServiciosService {
 
       const savedServicio = await createdServicio.save();
       
-      return {
-        data: savedServicio,
-        message: 'Servicio creado exitosamente'
-      };
+      return savedServicio;
     } catch (error) {
       if (error.name === 'ValidationError') {
         throw new BadRequestException({
@@ -99,15 +96,10 @@ export class ServiciosService {
   }
 
   // Listar todos los servicios
-  async findAll(): Promise<{ data: Servicio[]; message: string }> {
+  async findAll(): Promise<Servicio[]> {
     try {
       const servicios = await this.servicioModel.find().exec();
-      return {
-        data: servicios,
-        message: servicios.length > 0 
-          ? 'Servicios obtenidos exitosamente' 
-          : 'No se encontraron servicios'
-      };
+      return servicios;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los servicios',
@@ -119,15 +111,10 @@ export class ServiciosService {
   }
 
   // Listar servicios activos
-  async findActivos(): Promise<{ data: Servicio[]; message: string }> {
+  async findActivos(): Promise<Servicio[]> {
     try {
       const servicios = await this.servicioModel.find({ estado: 'activo' }).exec();
-      return {
-        data: servicios,
-        message: servicios.length > 0 
-          ? 'Servicios activos obtenidos exitosamente' 
-          : 'No se encontraron servicios activos'
-      };
+      return servicios;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los servicios activos',
@@ -139,13 +126,10 @@ export class ServiciosService {
   }
 
   // Buscar por ID
-  async findOne(id: string): Promise<{ data: Servicio; message: string }> {
+  async findOne(id: string): Promise<Servicio> {
     try {
       const servicio = await this.validateServicioExists(id);
-      return {
-        data: servicio,
-        message: 'Servicio obtenido exitosamente'
-      };
+      return servicio;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -160,7 +144,7 @@ export class ServiciosService {
   }
 
   // Actualizar servicio
-  async update(id: string, updateServicioDto: UpdateServicioDto): Promise<{ data: Servicio; message: string }> {
+  async update(id: string, updateServicioDto: UpdateServicioDto): Promise<Servicio> {
     try {
       const servicio = await this.validateServicioExists(id);
 
@@ -183,10 +167,7 @@ export class ServiciosService {
       Object.assign(servicio, updateServicioDto);
       const updatedServicio = await servicio.save();
       
-      return {
-        data: updatedServicio,
-        message: 'Servicio actualizado exitosamente'
-      };
+      return updatedServicio;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
@@ -201,7 +182,7 @@ export class ServiciosService {
   }
 
   // Eliminar servicio
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<void> {
     try {
       await this.validateServicioExists(id);
 
@@ -213,10 +194,6 @@ export class ServiciosService {
           statusCode: 404,
         });
       }
-
-      return { 
-        message: 'Servicio eliminado correctamente' 
-      };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -231,7 +208,7 @@ export class ServiciosService {
   }
 
   // Cambiar estado (activo / inactivo)
-  async cambiarEstado(id: string, estado: string): Promise<{ data: Servicio; message: string }> {
+  async cambiarEstado(id: string, estado: string): Promise<Servicio> {
     try {
       await this.validateServicioExists(id);
       
@@ -254,10 +231,7 @@ export class ServiciosService {
         });
       }
 
-      return {
-        data: servicio,
-        message: `Servicio ${estado} exitosamente`
-      };
+      return servicio;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -272,7 +246,7 @@ export class ServiciosService {
   }
 
   // Filtrar servicios (solo por estado ahora)
-  async filtrarServicios(filtros: { estado?: string }): Promise<{ data: Servicio[]; message: string }> {
+  async filtrarServicios(filtros: { estado?: string }): Promise<Servicio[]> {
     try {
       const query: any = {};
       if (filtros.estado && ['activo', 'inactivo'].includes(filtros.estado.toLowerCase())) {
@@ -281,15 +255,28 @@ export class ServiciosService {
 
       const servicios = await this.servicioModel.find(query).exec();
       
-      return {
-        data: servicios,
-        message: servicios.length > 0 
-          ? 'Servicios filtrados exitosamente' 
-          : 'No se encontraron servicios con los filtros aplicados'
-      };
+      return servicios;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al filtrar los servicios',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
+  }
+
+  // Buscar servicios por título (búsqueda parcial)
+  async buscarPorTitulo(titulo: string): Promise<Servicio[]> {
+    try {
+      const servicios = await this.servicioModel.find({
+        titulo: { $regex: titulo, $options: 'i' }
+      }).exec();
+      
+      return servicios;
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al buscar servicios por título',
         error: 'BAD_REQUEST',
         statusCode: 400,
         details: error.message,

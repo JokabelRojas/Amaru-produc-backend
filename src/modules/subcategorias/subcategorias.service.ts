@@ -71,7 +71,7 @@ export class SubcategoriasService {
     return subcategoria;
   }
 
-  async create(createSubcategoriaDto: CreateSubcategoriaDto): Promise<{ data: Subcategoria; message: string }> {
+  async create(createSubcategoriaDto: CreateSubcategoriaDto): Promise<Subcategoria> {
     try {
       await this.validateCreateSubcategoria(createSubcategoriaDto);
 
@@ -101,10 +101,7 @@ export class SubcategoriasService {
       const savedSubcategoria = await createdSubcategoria.save();
       const populatedSubcategoria = await savedSubcategoria.populate('id_categoria');
       
-      return {
-        data: populatedSubcategoria,
-        message: 'Subcategoría creada exitosamente'
-      };
+      return populatedSubcategoria;
     } catch (error) {
       if (error.name === 'ValidationError') {
         throw new BadRequestException({
@@ -125,7 +122,7 @@ export class SubcategoriasService {
     }
   }
 
-  async findByCategoria(idCategoria: string): Promise<{ data: Subcategoria[]; message: string }> {
+  async findByCategoria(idCategoria: string): Promise<Subcategoria[]> {
     try {
       this.validateMongoId(idCategoria);
       
@@ -144,12 +141,7 @@ export class SubcategoriasService {
         .populate('id_categoria')
         .exec();
 
-      return {
-        data: subcategorias,
-        message: subcategorias.length > 0 
-          ? 'Subcategorías por categoría obtenidas exitosamente' 
-          : 'No se encontraron subcategorías para esta categoría'
-      };
+      return subcategorias;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -163,19 +155,14 @@ export class SubcategoriasService {
     }
   }
 
-  async findAll(): Promise<{ data: Subcategoria[]; message: string }> {
+  async findAll(): Promise<Subcategoria[]> {
     try {
       const subcategorias = await this.subcategoriaModel
         .find()
         .populate('id_categoria')
         .exec();
 
-      return {
-        data: subcategorias,
-        message: subcategorias.length > 0 
-          ? 'Subcategorías obtenidas exitosamente' 
-          : 'No se encontraron subcategorías'
-      };
+      return subcategorias;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener las subcategorías',
@@ -186,15 +173,12 @@ export class SubcategoriasService {
     }
   }
 
-  async findOne(id: string): Promise<{ data: Subcategoria; message: string }> {
+  async findOne(id: string): Promise<Subcategoria> {
     try {
       const subcategoria = await this.validateSubcategoriaExists(id);
       const populatedSubcategoria = await subcategoria.populate('id_categoria');
       
-      return {
-        data: populatedSubcategoria,
-        message: 'Subcategoría obtenida exitosamente'
-      };
+      return populatedSubcategoria;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -208,7 +192,7 @@ export class SubcategoriasService {
     }
   }
 
-  async update(id: string, updateSubcategoriaDto: UpdateSubcategoriaDto): Promise<{ data: Subcategoria; message: string }> {
+  async update(id: string, updateSubcategoriaDto: UpdateSubcategoriaDto): Promise<Subcategoria> {
     try {
       const subcategoria = await this.validateSubcategoriaExists(id);
 
@@ -255,10 +239,7 @@ export class SubcategoriasService {
       const savedSubcategoria = await subcategoria.save();
       const populatedSubcategoria = await savedSubcategoria.populate('id_categoria');
 
-      return {
-        data: populatedSubcategoria,
-        message: 'Subcategoría actualizada exitosamente'
-      };
+      return populatedSubcategoria;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
@@ -272,7 +253,7 @@ export class SubcategoriasService {
     }
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<void> {
     try {
       await this.validateSubcategoriaExists(id);
 
@@ -285,10 +266,6 @@ export class SubcategoriasService {
           statusCode: 404,
         });
       }
-
-      return { 
-        message: 'Subcategoría eliminada correctamente' 
-      };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -302,7 +279,7 @@ export class SubcategoriasService {
     }
   }
 
-  async cambiarEstado(id: string, estado: string): Promise<{ data: Subcategoria; message: string }> {
+  async cambiarEstado(id: string, estado: string): Promise<Subcategoria> {
     try {
       await this.validateSubcategoriaExists(id);
       
@@ -327,10 +304,7 @@ export class SubcategoriasService {
         });
       }
 
-      return {
-        data: subcategoria,
-        message: `Subcategoría ${estado} exitosamente`
-      };
+      return subcategoria;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -389,6 +363,53 @@ export class SubcategoriasService {
       }
       throw new BadRequestException({
         message: 'Error al desactivar subcategorías por categoría',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
+  }
+
+  async findActivas(): Promise<Subcategoria[]> {
+    try {
+      const subcategorias = await this.subcategoriaModel
+        .find({ estado: 'activo' })
+        .populate('id_categoria')
+        .exec();
+
+      return subcategorias;
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al obtener las subcategorías activas',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
+  }
+
+  async findByEstado(estado: string): Promise<Subcategoria[]> {
+    try {
+      if (!['activo', 'inactivo'].includes(estado)) {
+        throw new BadRequestException({
+          message: 'El estado debe ser "activo" o "inactivo"',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+        });
+      }
+
+      const subcategorias = await this.subcategoriaModel
+        .find({ estado })
+        .populate('id_categoria')
+        .exec();
+
+      return subcategorias;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        message: 'Error al filtrar subcategorías por estado',
         error: 'BAD_REQUEST',
         statusCode: 400,
         details: error.message,

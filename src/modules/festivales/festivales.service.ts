@@ -77,7 +77,7 @@ export class FestivalesService {
     return festival;
   }
 
-  async create(createFestivalDto: CreateFestivalDto): Promise<{ data: Festival; message: string }> {
+  async create(createFestivalDto: CreateFestivalDto): Promise<Festival> {
     try {
       await this.validateCreateFestival(createFestivalDto);
 
@@ -85,10 +85,7 @@ export class FestivalesService {
       const savedFestival = await createdFestival.save();
       const populatedFestival = await savedFestival.populate('id_actividad');
 
-      return {
-        data: populatedFestival,
-        message: 'Festival creado exitosamente'
-      };
+      return populatedFestival;
     } catch (error) {
       if (error.name === 'ValidationError') {
         throw new BadRequestException({
@@ -109,15 +106,10 @@ export class FestivalesService {
     }
   }
 
-  async findAll(): Promise<{ data: Festival[]; message: string }> {
+  async findAll(): Promise<Festival[]> {
     try {
       const festivales = await this.festivalModel.find().populate('id_actividad').exec();
-      return {
-        data: festivales,
-        message: festivales.length > 0 
-          ? 'Festivales obtenidos exitosamente' 
-          : 'No se encontraron festivales'
-      };
+      return festivales;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los festivales',
@@ -128,15 +120,12 @@ export class FestivalesService {
     }
   }
 
-  async findOne(id: string): Promise<{ data: Festival; message: string }> {
+  async findOne(id: string): Promise<Festival> {
     try {
       const festival = await this.validateFestivalExists(id);
       const populatedFestival = await festival.populate('id_actividad');
       
-      return {
-        data: populatedFestival,
-        message: 'Festival obtenido exitosamente'
-      };
+      return populatedFestival;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -150,7 +139,7 @@ export class FestivalesService {
     }
   }
 
-  async update(id: string, updateFestivalDto: UpdateFestivalDto): Promise<{ data: Festival; message: string }> {
+  async update(id: string, updateFestivalDto: UpdateFestivalDto): Promise<Festival> {
     try {
       const festival = await this.validateFestivalExists(id);
 
@@ -185,10 +174,7 @@ export class FestivalesService {
       const savedFestival = await festival.save();
       const populatedFestival = await savedFestival.populate('id_actividad');
 
-      return {
-        data: populatedFestival,
-        message: 'Festival actualizado exitosamente'
-      };
+      return populatedFestival;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
@@ -202,7 +188,7 @@ export class FestivalesService {
     }
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<void> {
     try {
       await this.validateFestivalExists(id);
 
@@ -214,10 +200,6 @@ export class FestivalesService {
           statusCode: 404,
         });
       }
-
-      return { 
-        message: 'Festival eliminado correctamente' 
-      };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -231,17 +213,12 @@ export class FestivalesService {
     }
   }
 
-  async findByActividad(idActividad: string): Promise<{ data: Festival[]; message: string }> {
+  async findByActividad(idActividad: string): Promise<Festival[]> {
     try {
       this.validateMongoId(idActividad);
       const festivales = await this.festivalModel.find({ id_actividad: idActividad }).populate('id_actividad').exec();
       
-      return {
-        data: festivales,
-        message: festivales.length > 0 
-          ? 'Festivales por actividad obtenidos exitosamente' 
-          : 'No se encontraron festivales para esta actividad'
-      };
+      return festivales;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -255,7 +232,7 @@ export class FestivalesService {
     }
   }
 
-  async cambiarEstado(id: string, estado: string): Promise<{ data: Festival; message: string }> {
+  async cambiarEstado(id: string, estado: string): Promise<Festival> {
     try {
       await this.validateFestivalExists(id);
       
@@ -281,10 +258,7 @@ export class FestivalesService {
         });
       }
 
-      return {
-        data: festival,
-        message: `Festival ${estado} exitosamente`
-      };
+      return festival;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -298,7 +272,7 @@ export class FestivalesService {
     }
   }
 
-  async findProximos(): Promise<{ data: Festival[]; message: string }> {
+  async findProximos(): Promise<Festival[]> {
     try {
       const hoy = new Date();
       const festivales = await this.festivalModel.find({ 
@@ -306,12 +280,7 @@ export class FestivalesService {
         estado: 'activo'
       }).populate('id_actividad').exec();
 
-      return {
-        data: festivales,
-        message: festivales.length > 0 
-          ? 'Próximos festivales obtenidos exitosamente' 
-          : 'No se encontraron próximos festivales'
-      };
+      return festivales;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los próximos festivales',
@@ -322,19 +291,14 @@ export class FestivalesService {
     }
   }
 
-  async findByTipo(tipo: string): Promise<{ data: Festival[]; message: string }> {
+  async findByTipo(tipo: string): Promise<Festival[]> {
     try {
       const festivales = await this.festivalModel.find({ 
         tipo: new RegExp(tipo, 'i'),
         estado: 'activo'
       }).populate('id_actividad').exec();
 
-      return {
-        data: festivales,
-        message: festivales.length > 0 
-          ? `Festivales de tipo ${tipo} obtenidos exitosamente` 
-          : `No se encontraron festivales de tipo ${tipo}`
-      };
+      return festivales;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al buscar festivales por tipo',
@@ -345,18 +309,13 @@ export class FestivalesService {
     }
   }
 
-  async findActivos(): Promise<{ data: Festival[]; message: string }> {
+  async findActivos(): Promise<Festival[]> {
     try {
       const festivales = await this.festivalModel.find({ 
         estado: 'activo'
       }).populate('id_actividad').exec();
 
-      return {
-        data: festivales,
-        message: festivales.length > 0 
-          ? 'Festivales activos obtenidos exitosamente' 
-          : 'No se encontraron festivales activos'
-      };
+      return festivales;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los festivales activos',

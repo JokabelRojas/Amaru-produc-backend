@@ -90,7 +90,7 @@ export class TalleresService {
     return taller;
   }
 
-  async create(createTallerDto: CreateTallerDto): Promise<{ data: Taller; message: string }> {
+  async create(createTallerDto: CreateTallerDto): Promise<Taller> {
     try {
       await this.validateCreateTaller(createTallerDto);
 
@@ -123,10 +123,7 @@ export class TalleresService {
         });
       }
 
-      return {
-        data: taller,
-        message: 'Taller creado exitosamente'
-      };
+      return taller;
     } catch (error) {
       if (error.name === 'ValidationError') {
         throw new BadRequestException({
@@ -154,7 +151,7 @@ export class TalleresService {
     }
   }
 
-  async findOne(id: string): Promise<{ data: Taller; message: string }> {
+  async findOne(id: string): Promise<Taller> {
     try {
       this.validateMongoId(id);
       const taller = await this.tallerModel
@@ -172,10 +169,7 @@ export class TalleresService {
         });
       }
 
-      return {
-        data: taller,
-        message: 'Taller obtenido exitosamente'
-      };
+      return taller;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -189,7 +183,7 @@ export class TalleresService {
     }
   }
 
-  async findAll(): Promise<{ data: Taller[]; message: string }> {
+  async findAll(): Promise<Taller[]> {
     try {
       const talleres = await this.tallerModel
         .find()
@@ -198,12 +192,7 @@ export class TalleresService {
         .populate('id_profesor')
         .exec();
 
-      return {
-        data: talleres,
-        message: talleres.length > 0 
-          ? 'Talleres obtenidos exitosamente' 
-          : 'No se encontraron talleres'
-      };
+      return talleres;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los talleres',
@@ -214,7 +203,7 @@ export class TalleresService {
     }
   }
 
-  async update(id: string, updateTallerDto: UpdateTallerDto): Promise<{ data: Taller; message: string }> {
+  async update(id: string, updateTallerDto: UpdateTallerDto): Promise<Taller> {
     try {
       await this.validateTallerExists(id);
       
@@ -253,10 +242,7 @@ export class TalleresService {
         });
       }
 
-      return {
-        data: existingTaller,
-        message: 'Taller actualizado exitosamente'
-      };
+      return existingTaller;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -270,7 +256,7 @@ export class TalleresService {
     }
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<void> {
     try {
       this.validateMongoId(id);
       const deletedTaller = await this.tallerModel
@@ -285,10 +271,6 @@ export class TalleresService {
           statusCode: 404,
         });
       }
-
-      return { 
-        message: 'Taller eliminado correctamente' 
-      };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -302,7 +284,7 @@ export class TalleresService {
     }
   }
 
-  async findBySubcategoria(idSubcategoria: string): Promise<{ data: Taller[]; message: string }> {
+  async findBySubcategoria(idSubcategoria: string): Promise<Taller[]> {
     try {
       this.validateMongoId(idSubcategoria);
       const talleres = await this.tallerModel
@@ -312,12 +294,7 @@ export class TalleresService {
         .populate('id_profesor')
         .exec();
 
-      return {
-        data: talleres,
-        message: talleres.length > 0 
-          ? 'Talleres por subcategoría obtenidos exitosamente' 
-          : 'No se encontraron talleres para esta subcategoría'
-      };
+      return talleres;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -331,7 +308,7 @@ export class TalleresService {
     }
   }
 
-  async cambiarEstado(id: string, estado: string): Promise<{ data: Taller; message: string }> {
+  async cambiarEstado(id: string, estado: string): Promise<Taller> {
     try {
       this.validateMongoId(id);
       if (!['activo', 'inactivo'].includes(estado)) {
@@ -355,10 +332,7 @@ export class TalleresService {
         });
       }
 
-      return {
-        data: taller,
-        message: `Taller ${estado} exitosamente`
-      };
+      return taller;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -372,7 +346,7 @@ export class TalleresService {
     }
   }
 
-  async actualizarCupo(id: string, cuposReservados: number): Promise<{ data: Taller; message: string }> {
+  async actualizarCupo(id: string, cuposReservados: number): Promise<Taller> {
     try {
       this.validateMongoId(id);
       const taller = await this.tallerModel.findById(id);
@@ -397,10 +371,7 @@ export class TalleresService {
       taller.cupo_disponible = nuevoCupoDisponible;
       const savedTaller = await taller.save();
 
-      return {
-        data: savedTaller,
-        message: 'Cupo actualizado exitosamente'
-      };
+      return savedTaller;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
@@ -414,19 +385,14 @@ export class TalleresService {
     }
   }
 
-  async findActivos(): Promise<{ data: Taller[]; message: string }> {
+  async findActivos(): Promise<Taller[]> {
     try {
       const talleres = await this.tallerModel
         .find({ estado: 'activo' })
         .populate('id_subcategoria')
         .exec();
 
-      return {
-        data: talleres,
-        message: talleres.length > 0 
-          ? 'Talleres activos obtenidos exitosamente' 
-          : 'No se encontraron talleres activos'
-      };
+      return talleres;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los talleres activos',
@@ -437,7 +403,7 @@ export class TalleresService {
     }
   }
 
-  async findProximos(): Promise<{ data: Taller[]; message: string }> {
+  async findProximos(): Promise<Taller[]> {
     try {
       const ahora = new Date();
       const unaSemanaDespues = new Date(ahora.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -451,12 +417,7 @@ export class TalleresService {
         .populate('id_subcategoria')
         .exec();
 
-      return {
-        data: talleres,
-        message: talleres.length > 0 
-          ? 'Próximos talleres obtenidos exitosamente' 
-          : 'No se encontraron próximos talleres'
-      };
+      return talleres;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener los próximos talleres',
@@ -473,7 +434,7 @@ export class TalleresService {
     estado?: string;
     fecha_inicio?: string;
     fecha_fin?: string;
-  }): Promise<{ data: Taller[]; message: string }> {
+  }): Promise<Taller[]> {
     try {
       const query: any = {};
 
@@ -508,12 +469,7 @@ export class TalleresService {
         .populate('id_subcategoria')
         .exec();
 
-      return {
-        data: talleres,
-        message: talleres.length > 0 
-          ? 'Talleres filtrados exitosamente' 
-          : 'No se encontraron talleres con los filtros aplicados'
-      };
+      return talleres;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al filtrar los talleres',
@@ -524,7 +480,7 @@ export class TalleresService {
     }
   }
 
-  async findByProfesor(id_profesor: string): Promise<{ data: Taller[]; message: string }> {
+  async findByProfesor(id_profesor: string): Promise<Taller[]> {
     try {
       this.validateMongoId(id_profesor);
       
@@ -536,18 +492,37 @@ export class TalleresService {
         .sort({ fecha_inicio: 1 })
         .exec();
 
-      return {
-        data: talleres,
-        message: talleres.length > 0 
-          ? 'Talleres por profesor obtenidos exitosamente' 
-          : 'No se encontraron talleres para este profesor'
-      };
+      return talleres;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
       throw new BadRequestException({
         message: 'Error al buscar talleres por profesor',
+        error: 'BAD_REQUEST',
+        statusCode: 400,
+        details: error.message,
+      });
+    }
+  }
+
+  async findConCuposDisponibles(): Promise<Taller[]> {
+    try {
+      const talleres = await this.tallerModel
+        .find({ 
+          estado: 'activo',
+          cupo_disponible: { $gt: 0 },
+          fecha_inicio: { $gte: new Date() }
+        })
+        .populate('id_categoria')
+        .populate('id_subcategoria')
+        .populate('id_profesor')
+        .exec();
+
+      return talleres;
+    } catch (error) {
+      throw new BadRequestException({
+        message: 'Error al obtener talleres con cupos disponibles',
         error: 'BAD_REQUEST',
         statusCode: 400,
         details: error.message,

@@ -116,17 +116,14 @@ export class CategoriaService {
   }
 
   // Crear
-  async create(createCategoriaDto: CreateCategoriaDto): Promise<{ data: Categoria; message: string }> {
+  async create(createCategoriaDto: CreateCategoriaDto): Promise<Categoria> {
     try {
       await this.validateCreateCategoria(createCategoriaDto);
 
       const created = new this.categoriaModel(createCategoriaDto);
       const savedCategoria = await created.save();
 
-      return {
-        data: savedCategoria,
-        message: 'Categoría creada exitosamente'
-      };
+      return savedCategoria;
     } catch (error) {
       if (error instanceof ConflictException || error instanceof BadRequestException) {
         throw error;
@@ -141,15 +138,10 @@ export class CategoriaService {
   }
 
   // Obtener todas
-  async findAll(): Promise<{ data: Categoria[]; message: string }> {
+  async findAll(): Promise<Categoria[]> {
     try {
       const categorias = await this.categoriaModel.find().exec();
-      return {
-        data: categorias,
-        message: categorias.length > 0 
-          ? 'Categorías obtenidas exitosamente' 
-          : 'No se encontraron categorías'
-      };
+      return categorias;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener las categorías',
@@ -161,15 +153,10 @@ export class CategoriaService {
   }
 
   // Obtener activas
-  async findActive(): Promise<{ data: Categoria[]; message: string }> {
+  async findActive(): Promise<Categoria[]> {
     try {
       const categorias = await this.categoriaModel.find({ estado: 'activo' }).exec();
-      return {
-        data: categorias,
-        message: categorias.length > 0 
-          ? 'Categorías activas obtenidas exitosamente' 
-          : 'No se encontraron categorías activas'
-      };
+      return categorias;
     } catch (error) {
       throw new BadRequestException({
         message: 'Error al obtener las categorías activas',
@@ -181,7 +168,7 @@ export class CategoriaService {
   }
 
   // Filtrar por estado (activo/inactivo)
-  async findByEstado(estado: 'activo' | 'inactivo'): Promise<{ data: Categoria[]; message: string }> {
+  async findByEstado(estado: 'activo' | 'inactivo'): Promise<Categoria[]> {
     try {
       // Validar estado
       const validStates = ['activo', 'inactivo'];
@@ -194,12 +181,7 @@ export class CategoriaService {
       }
 
       const categorias = await this.categoriaModel.find({ estado }).exec();
-      return {
-        data: categorias,
-        message: categorias.length > 0 
-          ? `Categorías ${estado}s obtenidas exitosamente` 
-          : `No se encontraron categorías ${estado}s`
-      };
+      return categorias;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -214,7 +196,7 @@ export class CategoriaService {
   }
 
   // Filtrar por tipo
-  async findByTipo(tipo: 'taller' | 'servicio'): Promise<{ data: Categoria[]; message: string }> {
+  async findByTipo(tipo: 'taller' | 'servicio'): Promise<Categoria[]> {
     try {
       // Validar tipo
       const validTypes = ['taller', 'servicio'];
@@ -227,12 +209,7 @@ export class CategoriaService {
       }
 
       const categorias = await this.categoriaModel.find({ tipo, estado: 'activo' }).exec();
-      return {
-        data: categorias,
-        message: categorias.length > 0 
-          ? `Categorías de tipo ${tipo} obtenidas exitosamente` 
-          : `No se encontraron categorías de tipo ${tipo}`
-      };
+      return categorias;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -247,7 +224,7 @@ export class CategoriaService {
   }
 
   // Buscar por rango de fechas
-  async findByDateRange(startDate: Date, endDate: Date): Promise<{ data: Categoria[]; message: string }> {
+  async findByDateRange(startDate: Date, endDate: Date): Promise<Categoria[]> {
     try {
       // Validar fechas
       if (!startDate || !endDate) {
@@ -272,12 +249,7 @@ export class CategoriaService {
         })
         .exec();
 
-      return {
-        data: categorias,
-        message: categorias.length > 0 
-          ? 'Categorías obtenidas por rango de fechas exitosamente' 
-          : 'No se encontraron categorías en el rango de fechas especificado'
-      };
+      return categorias;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -292,13 +264,10 @@ export class CategoriaService {
   }
 
   // Buscar por ID
-  async findOne(id: string): Promise<{ data: Categoria; message: string }> {
+  async findOne(id: string): Promise<Categoria> {
     try {
       const categoria = await this.validateCategoriaExists(id);
-      return {
-        data: categoria,
-        message: 'Categoría obtenida exitosamente'
-      };
+      return categoria;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -313,7 +282,7 @@ export class CategoriaService {
   }
 
   // Actualizar
-  async update(id: string, updateCategoriaDto: UpdateCategoriaDto): Promise<{ data: Categoria; message: string }> {
+  async update(id: string, updateCategoriaDto: UpdateCategoriaDto): Promise<Categoria> {
     try {
       await this.validateUpdateCategoria(id, updateCategoriaDto);
 
@@ -321,10 +290,7 @@ export class CategoriaService {
         .findByIdAndUpdate(id, updateCategoriaDto, { new: true })
         .exec();
 
-      return {
-        data: updated!,
-        message: 'Categoría actualizada exitosamente'
-      };
+      return updated!;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
@@ -339,7 +305,7 @@ export class CategoriaService {
   }
 
   // Soft delete / desactivar
-  async softDelete(id: string): Promise<{ data: Categoria; message: string }> {
+  async softDelete(id: string): Promise<Categoria> {
     try {
       await this.validateCategoriaExists(id);
 
@@ -353,10 +319,7 @@ export class CategoriaService {
         { estado: 'inactivo' }
       ).exec();
 
-      return {
-        data: categoria!,
-        message: 'Categoría desactivada exitosamente junto con sus subcategorías'
-      };
+      return categoria!;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -371,7 +334,7 @@ export class CategoriaService {
   }
 
   // Activar
-  async activate(id: string): Promise<{ data: Categoria; message: string }> {
+  async activate(id: string): Promise<Categoria> {
     try {
       await this.validateCategoriaExists(id);
 
@@ -385,10 +348,7 @@ export class CategoriaService {
         { estado: 'activo' }
       ).exec();
 
-      return {
-        data: categoria!,
-        message: 'Categoría activada exitosamente junto con sus subcategorías'
-      };
+      return categoria!;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -403,7 +363,7 @@ export class CategoriaService {
   }
 
   // Eliminar permanente
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<void> {
     try {
       await this.validateCategoriaExists(id);
 
@@ -421,10 +381,6 @@ export class CategoriaService {
       }
 
       await this.categoriaModel.findByIdAndDelete(id).exec();
-
-      return {
-        message: 'Categoría eliminada permanentemente exitosamente'
-      };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
