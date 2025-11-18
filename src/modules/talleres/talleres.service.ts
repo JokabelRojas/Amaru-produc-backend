@@ -390,6 +390,7 @@ export class TalleresService {
       const talleres = await this.tallerModel
         .find({ estado: 'activo' })
         .populate('id_subcategoria')
+        .populate('id_profesor')
         .exec();
 
       return talleres;
