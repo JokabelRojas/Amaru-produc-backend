@@ -29,7 +29,7 @@ export class CategoriaService {
     }
 
     // Validar tipo
-    const validTypes = ['taller', 'servicio'];
+    const validTypes = ['taller', 'servicio','Taller','Servicio'];
     if (!validTypes.includes(createCategoriaDto.tipo)) {
       throw new BadRequestException({
         message: 'El tipo debe ser "taller" o "servicio"',
