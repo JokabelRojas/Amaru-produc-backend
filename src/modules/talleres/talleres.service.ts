@@ -415,6 +415,8 @@ export class TalleresService {
           cupo_disponible: { $gt: 0 }
         })
         .populate('id_subcategoria')
+        .populate('id_profesor')
+
         .exec();
 
       return talleres;
@@ -467,6 +469,8 @@ export class TalleresService {
         .find(query)
         .populate('id_categoria')
         .populate('id_subcategoria')
+        .populate('id_profesor')
+
         .exec();
 
       return talleres;
