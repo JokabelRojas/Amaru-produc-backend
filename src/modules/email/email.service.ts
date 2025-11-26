@@ -16,7 +16,7 @@ async enviarEmailInscripcionCreada(email: string, estado: string, idInscripcion:
     this.logger.log(`📧 Enviando email a: ${email} via BCC`);
 
     const { data, error } = await this.resend.emails.send({
-      from: 'Amaru Producciones <rojasmoralesjokabel@gmail.com>',
+      from: 'Amaru Producciones <@releauldou.resend.app>',
       to: ['rojasmoralesjokabel@gmail.com'], // A tu email verificado
       bcc: email, // Copia oculta al destinatario real
       subject: 'Seguimiento de Inscripción - Amaru Producciones',
