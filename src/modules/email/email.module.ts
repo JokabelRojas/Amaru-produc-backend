@@ -8,18 +8,22 @@ import { EmailService } from './email.service';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-transport: {
-  service: 'gmail', 
-  auth: {
-    user: configService.get('EMAIL_USER'),
-    pass: configService.get('EMAIL_PASSWORD'),
-  },
-},
+        transport: {
+          host: 'smtp.gmail.com',
+          port: 465,  // ✅ Puerto SSL
+          secure: true,  // ✅ SSL activado
+          auth: {
+            user: configService.get('EMAIL_USER'),
+            pass: configService.get('EMAIL_PASSWORD'),
+          },
+          // Opciones adicionales para Render
+          connectionTimeout: 30000, // 30 segundos
+          greetingTimeout: 30000,
+          socketTimeout: 30000,
+        },
         defaults: {
           from: `"Amaru Producciones" <${configService.get('EMAIL_USER')}>`,
         },
-        logger: true,
-        debug: true,
       }),
       inject: [ConfigService],
     }),
