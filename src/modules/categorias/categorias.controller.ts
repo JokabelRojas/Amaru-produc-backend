@@ -30,9 +30,6 @@ import {
 export class CategoriaController {
   constructor(private readonly categoriaService: CategoriaService) {}
 
-  // ===============================
-  // Crear categoría
-  // ===============================
   @Post()
   @ApiOperation({
     summary: 'Crear una nueva categoría',
@@ -53,9 +50,6 @@ export class CategoriaController {
     return this.categoriaService.create(createCategoriaDto);
   }
 
-  // ===============================
-  // Obtener todas las categorías
-  // ===============================
   @Get()
   @ApiOperation({
     summary: 'Obtener todas las categorías',

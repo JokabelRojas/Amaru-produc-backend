@@ -34,29 +34,29 @@ export class InscripcionesService {
     return { total: totalCalculado, moneda };
   }
 
-  async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
-    try {
-      // Calcular automáticamente el total y moneda
-      const { total, moneda } = await this.calcularTotalInscripcion(createInscripcionDto.id_usuario);
-      
-      // Crear el objeto de inscripción con los valores calculados
-      const inscripcionData = {
-        ...createInscripcionDto,
-        total,
-        moneda,
-        fecha_inscripcion: new Date()
-      };
+async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
+  try {
+    // Calcular automáticamente el total y moneda
+    const { total, moneda } = await this.calcularTotalInscripcion(createInscripcionDto.id_usuario);
+    
+    // Crear el objeto de inscripción con los valores calculados
+    const inscripcionData = {
+      ...createInscripcionDto,
+      total,
+      moneda,
+      fecha_inscripcion: new Date()
+    };
 
-      const createdInscripcion = new this.inscripcionModel(inscripcionData);
-      const savedInscripcion = await createdInscripcion.save();
-      return await savedInscripcion.populate('id_usuario');
-    } catch (error) {
-      if (error.name === 'ValidationError') {
-        throw new BadRequestException('Datos de la inscripción inválidos');
-      }
-      throw error;
+    const createdInscripcion = new this.inscripcionModel(inscripcionData);
+    const savedInscripcion = await createdInscripcion.save();
+    return await savedInscripcion.populate('id_usuario');
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      throw new BadRequestException('Datos de la inscripción inválidos');
     }
+    throw error;
   }
+}
 
   // Los demás métodos permanecen igual...
   async findAll(): Promise<Inscripcion[]> {

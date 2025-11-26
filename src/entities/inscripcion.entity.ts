@@ -46,6 +46,14 @@ export class Inscripcion extends Document {
   })
   moneda: string;
 
+    @ApiProperty({
+    description: 'Email del usuario para la inscripción',
+    example: 'usuario@example.com',
+    required: true
+  })
+  @Prop({ required: true })
+  email: string;
+
   @ApiProperty({
     description: 'Estado de la inscripción',
     example: 'pendiente',

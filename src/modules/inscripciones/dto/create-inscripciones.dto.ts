@@ -1,4 +1,4 @@
-import { IsMongoId, IsNotEmpty, IsOptional, IsIn, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsOptional, IsIn, IsString, IsEmail } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateInscripcionDto {
@@ -11,6 +11,15 @@ export class CreateInscripcionDto {
   @IsNotEmpty()
   id_usuario: string;
 
+  @ApiProperty({
+    description: 'Email del usuario para la inscripción',
+    example: 'usuario@example.com',
+    required: true
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
   @ApiPropertyOptional({
     description: 'Estado de la inscripción',
     example: 'pendiente',
@@ -21,6 +30,4 @@ export class CreateInscripcionDto {
   @IsIn(['pendiente','aprobado','rechazado'])
   @IsOptional()
   estado?: string;
-
-  // Removemos los campos total y moneda del DTO ya que se calcularán automáticamente
 }

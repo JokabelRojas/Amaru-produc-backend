@@ -36,7 +36,6 @@ import { PremiosModule } from './modules/premios/premios.module';
       }),
     }),
 
-    // 👇 Registra tus módulos aquí
     AuthModule,
     UsuariosModule,
     RolesModule,
