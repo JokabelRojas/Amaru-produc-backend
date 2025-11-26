@@ -11,30 +11,30 @@ export class EmailService {
     this.resend = new Resend(process.env.RESEND_API_KEY || 're_dxfg7FAd_BLK6HVtEdB4j7YiwM26TQZPg');
   }
 
-  async enviarEmailInscripcionCreada(email: string, estado: string, idInscripcion: string) {
-    try {
-      this.logger.log(`📧 Intentando enviar email via Resend a: ${email}`);
+async enviarEmailInscripcionCreada(email: string, estado: string, idInscripcion: string) {
+  try {
+    this.logger.log(`📧 Enviando email a: ${email} via BCC`);
 
-      const { data, error } = await this.resend.emails.send({
-        from: 'Amaru Producciones <onboarding@resend.dev>', // Email temporal de Resend
-        to: [email],
-        subject: 'Seguimiento de Inscripción - Amaru Producciones',
-        html: this.getTemplateInscripcionCreada(estado, idInscripcion),
-      });
+    const { data, error } = await this.resend.emails.send({
+      from: 'Amaru Producciones <rojasmoralesjokabel@gmail.com>',
+      to: ['rojasmoralesjokabel@gmail.com'], // A tu email verificado
+      bcc: email, // Copia oculta al destinatario real
+      subject: 'Seguimiento de Inscripción - Amaru Producciones',
+      html: this.getTemplateInscripcionCreada(estado, idInscripcion),
+    });
 
-      if (error) {
-        this.logger.error(`❌ Error de Resend:`, error);
-        return false;
-      }
-
-      this.logger.log(`✅ Email enviado exitosamente via Resend a: ${email}`);
-      this.logger.log(`📨 ID: ${data?.id}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Error enviando email:`, error);
+    if (error) {
+      this.logger.error(`❌ Error de Resend:`, error);
       return false;
     }
+
+    this.logger.log(`✅ Email enviado con BCC a: ${email}`);
+    return true;
+  } catch (error) {
+    this.logger.error(`❌ Error enviando email:`, error);
+    return false;
   }
+}
 
   async enviarEmailEstadoActualizado(email: string, estado: string, idInscripcion: string) {
     try {
