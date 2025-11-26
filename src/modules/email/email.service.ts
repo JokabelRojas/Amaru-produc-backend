@@ -7,10 +7,13 @@ export class EmailService {
 
   constructor(private readonly mailerService: MailerService) {}
 
+
   async enviarEmailInscripcionCreada(email: string, estado: string, idInscripcion: string) {
     try {
-      this.logger.log(`Intentando enviar email a: ${email}`);
-      
+      this.logger.log(`📧 Intentando enviar email a: ${email}`);
+      this.logger.log(`🔧 Config - User: ${process.env.EMAIL_USER ? '✅' : '❌'}`);
+      this.logger.log(`🔧 Config - Pass: ${process.env.EMAIL_PASSWORD ? '✅' : '❌'}`);
+
       const result = await this.mailerService.sendMail({
         to: email,
         subject: 'Seguimiento de Inscripción - Amaru Producciones',
@@ -18,10 +21,21 @@ export class EmailService {
       });
 
       this.logger.log(`✅ Email enviado exitosamente a: ${email}`);
-      this.logger.debug(`Message ID: ${result.messageId}`);
+      this.logger.log(`📨 Message ID: ${result.messageId}`);
+      this.logger.log(`📊 Response: ${result.response}`);
+      
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error enviando email a ${email}:`, error);
+      this.logger.error(`❌ Error CRÍTICO enviando email:`);
+      this.logger.error(`📧 Destino: ${email}`);
+      this.logger.error(`🔧 Error: ${error.message}`);
+      this.logger.error(`🔍 Stack: ${error.stack}`);
+      
+      // Error específico de autenticación
+      if (error.code === 'EAUTH') {
+        this.logger.error('❌ Error de autenticación - Verifica EMAIL_USER y EMAIL_PASSWORD');
+      }
+      
       return false;
     }
   }

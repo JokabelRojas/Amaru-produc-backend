@@ -230,4 +230,6 @@ export class InscripcionesController {
   async remove(@Param('id') id: string): Promise<void> {
     await this.inscripcionesService.remove(id);
   }
+
+  
 }

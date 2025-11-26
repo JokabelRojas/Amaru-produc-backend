@@ -11,15 +11,17 @@ import { EmailService } from './email.service';
         transport: {
           host: 'smtp.gmail.com',
           port: 587,
-          secure: false, 
+          secure: false,
           auth: {
-            user: configService.get<string>('EMAIL_USER'),
-            pass: configService.get<string>('EMAIL_PASSWORD'),
+            user: configService.get('EMAIL_USER'),
+            pass: configService.get('EMAIL_PASSWORD'),
           },
         },
         defaults: {
-          from: `"Amaru Producciones" <${configService.get<string>('EMAIL_USER')}>`,
+          from: `"Amaru Producciones" <${configService.get('EMAIL_USER')}>`,
         },
+        logger: true,
+        debug: true,
       }),
       inject: [ConfigService],
     }),
