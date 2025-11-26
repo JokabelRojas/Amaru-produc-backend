@@ -19,6 +19,7 @@ import { PagosModule } from './modules/pagos/pagos.module';
 import { ProfesorModule } from './modules/profesores/profesores.module';
 import { ActividadesModule } from './modules/actividades/actividades.module';
 import { PremiosModule } from './modules/premios/premios.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -50,7 +51,8 @@ import { PremiosModule } from './modules/premios/premios.module';
     PagosModule,
     ProfesorModule,
     ActividadesModule,
-    PremiosModule
+    PremiosModule,
+    EmailModule
   ],
 })
 export class AppModule {}
