@@ -1,7 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose'; // Importa Types
 import { Usuario } from './usuario.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export type InscripcionDocument = Inscripcion & Document;
 
 @Schema({ timestamps: true })
 export class Inscripcion extends Document {
@@ -15,7 +17,15 @@ export class Inscripcion extends Document {
     ref: 'Usuario', 
     required: true 
   })
-  id_usuario: Usuario;
+  id_usuario: Usuario | Types.ObjectId; // Cambia aquí
+
+  @ApiProperty({
+    description: 'Email del usuario para la inscripción',
+    example: 'usuario@example.com',
+    required: true
+  })
+  @Prop({ required: true })
+  email: string;
 
   @ApiProperty({
     description: 'Fecha de la inscripción',
@@ -45,14 +55,6 @@ export class Inscripcion extends Document {
     enum: ['PEN', 'USD'] 
   })
   moneda: string;
-
-    @ApiProperty({
-    description: 'Email del usuario para la inscripción',
-    example: 'usuario@example.com',
-    required: true
-  })
-  @Prop({ required: true })
-  email: string;
 
   @ApiProperty({
     description: 'Estado de la inscripción',

@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
+import { Model, isValidObjectId, Types } from 'mongoose'; // Importa Types
 import { CreateInscripcionDto } from './dto/create-inscripciones.dto';
 import { UpdateInscripcionDto } from './dto/update-inscripciones.dto';
-import { Inscripcion } from 'src/entities/inscripcion.entity';
+import { Inscripcion, InscripcionDocument } from 'src/entities/inscripcion.entity'; // Importa InscripcionDocument
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class InscripcionesService {
   constructor(
-    @InjectModel(Inscripcion.name) private inscripcionModel: Model<Inscripcion>,
+    @InjectModel(Inscripcion.name) private inscripcionModel: Model<InscripcionDocument>, // Usa InscripcionDocument aquí
+    private readonly emailService: EmailService,
   ) {}
 
   private validateMongoId(id: string): void {
@@ -18,47 +20,47 @@ export class InscripcionesService {
   }
 
   private async calcularTotalInscripcion(idUsuario: string): Promise<{ total: number; moneda: string }> {
-    // Aquí implementas la lógica para calcular el total
-    // Por ejemplo, podrías:
-    // 1. Buscar cursos/eventos que el usuario quiere inscribirse
-    // 2. Consultar precios desde otra colección
-    // 3. Aplicar descuentos si corresponde
-    
-    // Por ahora, usaremos valores por defecto como ejemplo
-    // Puedes modificar esta lógica según tus necesidades
-    
-    // Ejemplo: calcular basado en cursos pendientes del usuario
-    const totalCalculado = 100.00; // Este valor vendría de tu lógica de negocio
-    const moneda = 'PEN'; // O podrías determinar la moneda basado en el usuario/ubicación
-    
+    const totalCalculado = 100.00;
+    const moneda = 'PEN';
     return { total: totalCalculado, moneda };
   }
 
-async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
-  try {
-    // Calcular automáticamente el total y moneda
-    const { total, moneda } = await this.calcularTotalInscripcion(createInscripcionDto.id_usuario);
-    
-    // Crear el objeto de inscripción con los valores calculados
-    const inscripcionData = {
-      ...createInscripcionDto,
-      total,
-      moneda,
-      fecha_inscripcion: new Date()
-    };
+  async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
+    try {
+      const { total, moneda } = await this.calcularTotalInscripcion(createInscripcionDto.id_usuario);
+      
+      const inscripcionData = {
+        ...createInscripcionDto,
+        total,
+        moneda,
+        fecha_inscripcion: new Date()
+      };
 
-    const createdInscripcion = new this.inscripcionModel(inscripcionData);
-    const savedInscripcion = await createdInscripcion.save();
-    return await savedInscripcion.populate('id_usuario');
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      throw new BadRequestException('Datos de la inscripción inválidos');
+      const createdInscripcion = new this.inscripcionModel(inscripcionData);
+      const savedInscripcion = await createdInscripcion.save();
+      const populatedInscripcion = await savedInscripcion.populate('id_usuario');
+
+      // Solución: Convierte el _id a string explícitamente
+      const inscripcionId = (populatedInscripcion._id as Types.ObjectId).toString();
+
+      // Enviar email de confirmación
+      this.emailService.enviarEmailInscripcionCreada(
+        createInscripcionDto.email,
+        createInscripcionDto.estado || 'pendiente',
+        inscripcionId // Usa la variable convertida
+      ).catch(error => {
+        console.error('Error enviando email de confirmación:', error);
+      });
+
+      return populatedInscripcion;
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        throw new BadRequestException('Datos de la inscripción inválidos');
+      }
+      throw error;
     }
-    throw error;
   }
-}
 
-  // Los demás métodos permanecen igual...
   async findAll(): Promise<Inscripcion[]> {
     return this.inscripcionModel.find().populate('id_usuario').exec();
   }
@@ -98,12 +100,27 @@ async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
     if (!estadosPermitidos.includes(estado)) {
       throw new BadRequestException(`Estado debe ser: ${estadosPermitidos.join(', ')}`);
     }
+    
     const inscripcion = await this.inscripcionModel.findByIdAndUpdate(
       id, 
       { estado }, 
       { new: true }
     ).populate('id_usuario');
+    
     if (!inscripcion) throw new NotFoundException(`Inscripción con ID ${id} no encontrada`);
+
+    // Solución: Convierte el _id a string explícitamente
+    const inscripcionId = (inscripcion._id as Types.ObjectId).toString();
+
+    // Enviar email de actualización de estado
+    this.emailService.enviarEmailEstadoActualizado(
+      inscripcion.email,
+      estado,
+      inscripcionId // Usa la variable convertida
+    ).catch(error => {
+      console.error('Error enviando email de actualización:', error);
+    });
+
     return inscripcion;
   }
 
@@ -121,7 +138,7 @@ async create(createInscripcionDto: CreateInscripcionDto): Promise<Inscripcion> {
       { $group: { _id: '$estado', count: { $sum: 1 } } }
     ]);
     const ingresos = await this.inscripcionModel.aggregate([
-      { $match: { estado: 'aprobado' } }, // Cambié 'pagado' por 'aprobado' para coincidir con tus estados
+      { $match: { estado: 'aprobado' } },
       { $group: { _id: null, total: { $sum: '$total' } } }
     ]);
 
