@@ -1,63 +1,66 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private resend: Resend;
 
-  constructor(private readonly mailerService: MailerService) {}
-
+  constructor() {
+    // Tu API Key de Resend
+    this.resend = new Resend(process.env.RESEND_API_KEY || 're_dxfg7FAd_BLK6HVtEdB4j7YiwM26TQZPg');
+  }
 
   async enviarEmailInscripcionCreada(email: string, estado: string, idInscripcion: string) {
     try {
-      this.logger.log(`📧 Intentando enviar email a: ${email}`);
-      this.logger.log(`🔧 Config - User: ${process.env.EMAIL_USER ? '✅' : '❌'}`);
-      this.logger.log(`🔧 Config - Pass: ${process.env.EMAIL_PASSWORD ? '✅' : '❌'}`);
+      this.logger.log(`📧 Intentando enviar email via Resend a: ${email}`);
 
-      const result = await this.mailerService.sendMail({
-        to: email,
+      const { data, error } = await this.resend.emails.send({
+        from: 'Amaru Producciones <onboarding@resend.dev>', // Email temporal de Resend
+        to: [email],
         subject: 'Seguimiento de Inscripción - Amaru Producciones',
         html: this.getTemplateInscripcionCreada(estado, idInscripcion),
       });
 
-      this.logger.log(`✅ Email enviado exitosamente a: ${email}`);
-      this.logger.log(`📨 Message ID: ${result.messageId}`);
-      this.logger.log(`📊 Response: ${result.response}`);
-      
+      if (error) {
+        this.logger.error(`❌ Error de Resend:`, error);
+        return false;
+      }
+
+      this.logger.log(`✅ Email enviado exitosamente via Resend a: ${email}`);
+      this.logger.log(`📨 ID: ${data?.id}`);
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error CRÍTICO enviando email:`);
-      this.logger.error(`📧 Destino: ${email}`);
-      this.logger.error(`🔧 Error: ${error.message}`);
-      this.logger.error(`🔍 Stack: ${error.stack}`);
-      
-      // Error específico de autenticación
-      if (error.code === 'EAUTH') {
-        this.logger.error('❌ Error de autenticación - Verifica EMAIL_USER y EMAIL_PASSWORD');
-      }
-      
+      this.logger.error(`❌ Error enviando email:`, error);
       return false;
     }
   }
 
   async enviarEmailEstadoActualizado(email: string, estado: string, idInscripcion: string) {
     try {
-      this.logger.log(`Intentando enviar email de actualización a: ${email}`);
-      
-      const result = await this.mailerService.sendMail({
-        to: email,
+      this.logger.log(`📧 Intentando enviar email de actualización a: ${email}`);
+
+      const { data, error } = await this.resend.emails.send({
+        from: 'Amaru Producciones <onboarding@resend.dev>',
+        to: [email],
         subject: `Actualización de Estado - Inscripción ${estado.toUpperCase()}`,
         html: this.getTemplateEstadoActualizado(estado, idInscripcion),
       });
 
+      if (error) {
+        this.logger.error(`❌ Error de Resend:`, error);
+        return false;
+      }
+
       this.logger.log(`✅ Email de actualización enviado a: ${email}`);
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error enviando email de actualización a ${email}:`, error);
+      this.logger.error(`❌ Error enviando email de actualización:`, error);
       return false;
     }
   }
 
+  // Mantén tus métodos getTemplate... igual que antes
   private getTemplateInscripcionCreada(estado: string, idInscripcion: string): string {
     return `
       <!DOCTYPE html>
